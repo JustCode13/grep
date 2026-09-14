@@ -13,6 +13,8 @@ int validate_options(char *opt_arg);
 
 int main(int argc, char *argv[]) {
 
+    size_t file_count = argc - 2;
+
     if (argc < 3) {
         printf("Usage: %s [-options] [-pattern] [-files]\n", argv[0]);
         return 1;
@@ -22,10 +24,15 @@ int main(int argc, char *argv[]) {
 
     if (argv[1][0] == '-') {
         is_options = true;
+        file_count -= 1;
 
         if (validate_options(argv[1]) != 0) {
             return 1;
         }
+    }
+
+    if (file_count == 0) {
+        printf("No file provided\n");
     }
 
     if (is_options) {
