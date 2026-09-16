@@ -1,7 +1,9 @@
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 // static bool is_option_c = false;
 // static bool is_option_i = false;
@@ -11,9 +13,16 @@
 
 int validate_options(char *opt_arg);
 
+int open_file(char *file_name);
+
+int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
+                                      size_t file_count, char *argv[],
+                                      size_t skip_arg);
+
 int main(int argc, char *argv[]) {
 
-    size_t file_count = argc - 2;
+    size_t file_count = (size_t)argc - 2;
+    size_t skip_arg = 2;
 
     if (argc < 3) {
         printf("Usage: %s [-options] [-pattern] [-files]\n", argv[0]);
@@ -25,6 +34,7 @@ int main(int argc, char *argv[]) {
     if (argv[1][0] == '-') {
         is_options = true;
         file_count -= 1;
+        skip_arg += 1;
 
         if (validate_options(argv[1]) != 0) {
             return 1;
@@ -32,7 +42,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (file_count == 0) {
-        printf("No file provided\n");
+        printf("Error: No file provided\n");
+    }
+
+    char *file_names[file_count];
+    int file_fds[file_count];
+
+    if (store_validate_file_names_and_fds(file_names, file_fds, file_count,
+                                          argv, skip_arg) != 0) {
+        return 1;
     }
 
     if (is_options) {
@@ -42,12 +60,48 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
+                                      size_t file_count, char *argv[],
+                                      size_t skip_arg) {
+
+    if (open(argv[2], O_RDONLY) != -1) {
+        printf("Error: No pattern provided\n");
+        return 1;
+    }
+
+    for (size_t i = 0; i < file_count; i++) {
+        file_names[i] = argv[skip_arg + i];
+        file_fds[i] = open_file(file_names[i]);
+
+        if (file_fds[i] == -1) {
+            return 1;
+        }
+    }
+
+    for (size_t i = 0; i < file_count; i++) {
+        printf("%s\n", file_names[i]);
+    }
+
+    return 0;
+}
+
+int open_file(char *file_name) {
+    int fd = open(file_name, O_RDONLY);
+
+    if (fd == -1) {
+        printf("Error: opening file: %s\n", file_name);
+        return -1;
+    }
+
+    return fd;
+}
+
 int validate_options(char *opt_arg) {
     size_t options_len = strlen(opt_arg) - 1;
 
     for (size_t i = 0; i < options_len; i++) {
         if (!strchr("icnvr", opt_arg[i + 1])) {
-            printf("Invalid option: %c\n", opt_arg[i + 1]);
+            printf("Error: Invalid option: %c\n", opt_arg[i + 1]);
             return 1;
         }
 
@@ -65,9 +119,9 @@ int validate_options(char *opt_arg) {
         // }
     }
 
-    for (size_t i = 0; i < options_len; i++) {
-        printf("option: %c\n", opt_arg[i + 1]);
-    }
+    // for (size_t i = 0; i < options_len; i++) {
+    //     printf("option: %c\n", opt_arg[i + 1]);
+    // }
 
     return 0;
 }
