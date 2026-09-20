@@ -11,6 +11,8 @@
 // static bool is_option_v = false;
 // static bool is_option_r = false;
 
+#define MAX_LINE_LENGTH 256
+
 int validate_options(char *opt_arg);
 
 int open_file(char *file_name);
@@ -18,6 +20,8 @@ int open_file(char *file_name);
 int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
                                       size_t file_count, char *argv[],
                                       size_t skip_arg);
+
+int read_line(int file_fd, char *buf);
 
 int main(int argc, char *argv[]) {
 
@@ -53,8 +57,26 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (is_options) {
-        printf("Hello\n");
+    is_options ? printf("options are there\n")
+               : printf("options are not there\n");
+
+    char line[MAX_LINE_LENGTH];
+
+    for (size_t i = 0; i < file_count; i++) {
+        if (read_line(file_fds[i], line) != 0) {
+            return 1;
+        }
+
+        printf("%s\n", line);
+    }
+
+    return 0;
+}
+
+int read_line(int file_fd, char *buf) {
+    if (read(file_fd, buf, MAX_LINE_LENGTH - 1) < 1) {
+        printf("Error: can't read line");
+        return 1;
     }
 
     return 0;
@@ -64,7 +86,7 @@ int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
                                       size_t file_count, char *argv[],
                                       size_t skip_arg) {
 
-    if (open(argv[2], O_RDONLY) != -1) {
+    if (open(argv[2], O_RDONLY) == -1) {
         printf("Error: No pattern provided\n");
         return 1;
     }
@@ -78,9 +100,10 @@ int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
         }
     }
 
-    for (size_t i = 0; i < file_count; i++) {
-        printf("%s\n", file_names[i]);
-    }
+    // for (size_t i = 0; i < file_count; i++) {
+    //     printf("%s\n", file_names[i]);
+    //     printf("%d\n", file_fds[i]);
+    // }
 
     return 0;
 }
