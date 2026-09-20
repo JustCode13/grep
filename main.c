@@ -19,7 +19,7 @@ int open_file(char *file_name);
 
 int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
                                       size_t file_count, char *argv[],
-                                      size_t skip_arg);
+                                      size_t skip_arg, bool is_options);
 
 int read_line(int file_fd, char *buf);
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     int file_fds[file_count];
 
     if (store_validate_file_names_and_fds(file_names, file_fds, file_count,
-                                          argv, skip_arg) != 0) {
+                                          argv, skip_arg, is_options) != 0) {
         return 1;
     }
 
@@ -84,13 +84,18 @@ int read_line(int file_fd, char *buf) {
 
 int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
                                       size_t file_count, char *argv[],
-                                      size_t skip_arg) {
-
-    if (open(argv[2], O_RDONLY) == -1) {
-        printf("Error: No pattern provided\n");
-        return 1;
+                                      size_t skip_arg, bool is_options) {
+    if (is_options) {
+        if (open(argv[2], O_RDONLY) != -1) {
+            printf("Error: No pattern provided\n");
+            return 1;
+        }
+    } else {
+        if (open(argv[1], O_RDONLY) != -1) {
+            printf("Error: No pattern provided\n");
+            return 1;
+        }
     }
-
     for (size_t i = 0; i < file_count; i++) {
         file_names[i] = argv[skip_arg + i];
         file_fds[i] = open_file(file_names[i]);
