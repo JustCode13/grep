@@ -5,11 +5,11 @@
 #include <string.h>
 #include <unistd.h>
 
-// static bool is_option_c = false;
-// static bool is_option_i = false;
+static bool is_option_c = false;
+static bool is_option_i = false;
 static bool is_option_n = false;
-// static bool is_option_v = false;
-// static bool is_option_r = false;
+static bool is_option_v = false;
+static bool is_option_r = false;
 
 #define MAX_LINE_LENGTH 1024
 
@@ -94,6 +94,8 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
             for (size_t j = 0; j < (size_t)bytes_read; j++) {
                 if (buffer[j] == '\n' || buffer[j] == '\0') {
 
+                    line_number++;
+
                     if (line_length >= MAX_LINE_LENGTH - 1) {
                         printf("Error: Line exceeds maximum line_length\n");
                     }
@@ -116,6 +118,14 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                                 printf("Error formatting line number\n");
                                 return 1;
                             }
+
+                            if (write(file_fds[j], number, sizeof(number)) ==
+                                -1) {
+                                perror("write");
+                                return 1;
+                            }
+
+                            printf("%s\n", line);
                         }
                     }
 
@@ -219,20 +229,24 @@ int validate_options(char *opt_arg) {
         }
 
         switch (opt_arg[i + 1]) {
-        // case 'i':
-        //     is_option_i = true;
-        // case 'c':
-        //     is_option_c = true;
+        case 'i':
+            is_option_i = true;
+            break;
+        case 'c':
+            is_option_c = true;
+            break;
         case 'n':
             is_option_n = true;
-            // case 'v':
-            //     is_option_v = true;
-            // case 'r':
-            //     is_option_r = true;
-
+            break;
+        case 'v':
+            is_option_v = true;
+            break;
+        case 'r':
+            is_option_r = true;
+            break;
         default:
-            printf("Invalid Option\n");
             return 1;
+            break;
         }
     }
 
