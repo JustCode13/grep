@@ -11,7 +11,7 @@
 // static bool is_option_v = false;
 // static bool is_option_r = false;
 
-#define MAX_LINE_LENGTH 256
+#define MAX_LINE_LENGTH 1024
 
 int validate_options(char *opt_arg);
 
@@ -22,6 +22,8 @@ int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
                                       size_t skip_arg, bool is_options);
 
 int read_line(int file_fd, char *buf);
+
+int read_files_by_line(size_t file_count, int *file_fds, char *pattern);
 
 int main(int argc, char *argv[]) {
 
@@ -52,6 +54,8 @@ int main(int argc, char *argv[]) {
     char *file_names[file_count];
     int file_fds[file_count];
 
+    char *pattern = is_options ? argv[2] : argv[1];
+
     if (store_validate_file_names_and_fds(file_names, file_fds, file_count,
                                           argv, skip_arg, is_options) != 0) {
         return 1;
@@ -60,14 +64,72 @@ int main(int argc, char *argv[]) {
     is_options ? printf("options are there\n")
                : printf("options are not there\n");
 
+    if (read_files_by_line(file_count, file_fds, pattern) != 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int read_files_by_line(size_t file_count, int *file_fds, char *pattern) {
+    char buffer[4056];
     char line[MAX_LINE_LENGTH];
+    size_t line_length = 0;
 
     for (size_t i = 0; i < file_count; i++) {
-        if (read_line(file_fds[i], line) != 0) {
+        ssize_t bytes_read;
+
+        line_length = 0;
+
+        while ((bytes_read = read(file_fds[i], buffer, sizeof(buffer) - 2)) >
+               0) {
+
+            for (size_t j = 0; j < (size_t)bytes_read; j++) {
+                if (buffer[j] == '\n') {
+
+                    if (line_length >= MAX_LINE_LENGTH - 1) {
+                        printf("Error: Line exceeds maximum line_length\n");
+                    }
+
+                    line[line_length] = '\n';
+                    line_length++;
+
+                    line[line_length] = '\0';
+
+                    if (strstr(line, pattern) != NULL) {
+                        printf("%s\n", line);
+                    }
+
+                    line_length = 0;
+                } else {
+                    if (line_length >= MAX_LINE_LENGTH - 1) {
+                        printf("Error Exceedng line size\n");
+
+                        return 1;
+                    }
+
+                    line[line_length] = buffer[j];
+                    line_length++;
+                }
+            }
+        }
+
+        if (bytes_read == -1) {
+            perror("read");
             return 1;
         }
 
-        printf("%s\n", line);
+        /*
+         * Handle a final line that doesn't end with '\n'.
+         */
+        if (line_length > 0) {
+
+            line[line_length] = '\0';
+
+            if (strstr(line, pattern) != NULL) {
+                printf("%s\n", line);
+            }
+        }
     }
 
     return 0;
