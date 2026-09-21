@@ -23,7 +23,8 @@ int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
 
 int read_line(int file_fd, char *buf);
 
-int read_files_by_line(size_t file_count, int *file_fds, char *pattern);
+int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
+                       bool is_options);
 
 int main(int argc, char *argv[]) {
 
@@ -64,17 +65,18 @@ int main(int argc, char *argv[]) {
     is_options ? printf("options are there\n")
                : printf("options are not there\n");
 
-    if (read_files_by_line(file_count, file_fds, pattern) != 0) {
+    if (read_files_by_line(file_count, file_fds, pattern, is_options) != 0) {
         return 1;
     }
 
     return 0;
 }
 
-int read_files_by_line(size_t file_count, int *file_fds, char *pattern) {
+int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
+                       bool is_options) {
     char buffer[4056];
     char line[MAX_LINE_LENGTH];
-    size_t line_length = 0;
+    size_t line_length;
 
     for (size_t i = 0; i < file_count; i++) {
         ssize_t bytes_read;
@@ -84,8 +86,11 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern) {
         while ((bytes_read = read(file_fds[i], buffer, sizeof(buffer) - 2)) >
                0) {
 
+            buffer[bytes_read] = '\n';
+            buffer[bytes_read + 1] = '\0';
+
             for (size_t j = 0; j < (size_t)bytes_read; j++) {
-                if (buffer[j] == '\n') {
+                if (buffer[j] == '\n' || buffer[j] == '\0') {
 
                     if (line_length >= MAX_LINE_LENGTH - 1) {
                         printf("Error: Line exceeds maximum line_length\n");
@@ -97,7 +102,9 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern) {
                     line[line_length] = '\0';
 
                     if (strstr(line, pattern) != NULL) {
-                        printf("%s\n", line);
+                        if (!is_options) {
+                            printf("%s\n", line);
+                        }
                     }
 
                     line_length = 0;
@@ -122,14 +129,18 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern) {
         /*
          * Handle a final line that doesn't end with '\n'.
          */
-        if (line_length > 0) {
-
-            line[line_length] = '\0';
-
-            if (strstr(line, pattern) != NULL) {
-                printf("%s\n", line);
-            }
-        }
+        // if (line_length > 0) {
+        //
+        //     line[line_length] = '\0';
+        //
+        //     if (strstr(line, pattern) != NULL) {
+        //         printf("%d", is_options);
+        //         if (!is_options) {
+        //
+        //             printf("%s\n", line);
+        //         }
+        //     }
+        // }
     }
 
     return 0;
