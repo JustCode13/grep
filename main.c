@@ -7,7 +7,7 @@
 
 // static bool is_option_c = false;
 // static bool is_option_i = false;
-// static bool is_option_n = false;
+static bool is_option_n = false;
 // static bool is_option_v = false;
 // static bool is_option_r = false;
 
@@ -79,6 +79,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
     size_t line_length;
 
     for (size_t i = 0; i < file_count; i++) {
+        bool is_line_start = true;
         ssize_t bytes_read;
 
         line_length = 0;
@@ -107,7 +108,9 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                         }
                     }
 
-                    line_length = 0;
+                    if (is_line_start && is_option_n)
+
+                        line_length = 0;
                 } else {
                     if (line_length >= MAX_LINE_LENGTH - 1) {
                         printf("Error Exceedng line size\n");
@@ -206,18 +209,22 @@ int validate_options(char *opt_arg) {
             return 1;
         }
 
-        // switch (opt_arg[i + 1]) {
+        switch (opt_arg[i + 1]) {
         // case 'i':
         //     is_option_i = true;
         // case 'c':
         //     is_option_c = true;
-        // case 'n':
-        //     is_option_n = true;
-        // case 'v':
-        //     is_option_v = true;
-        // case 'r':
-        //     is_option_r = true;
-        // }
+        case 'n':
+            is_option_n = true;
+            // case 'v':
+            //     is_option_v = true;
+            // case 'r':
+            //     is_option_r = true;
+
+        default:
+            printf("Invalid Option\n");
+            return 1;
+        }
     }
 
     // for (size_t i = 0; i < options_len; i++) {
