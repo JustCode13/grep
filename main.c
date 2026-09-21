@@ -119,7 +119,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                                 return 1;
                             }
 
-                            if (write(file_fds[j], number, sizeof(number)) ==
+                            if (write(STDOUT_FILENO, number, sizeof(number)) ==
                                 -1) {
                                 perror("write");
                                 return 1;
