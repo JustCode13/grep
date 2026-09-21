@@ -80,6 +80,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
 
     for (size_t i = 0; i < file_count; i++) {
         bool is_line_start = true;
+        size_t line_number = 0;
         ssize_t bytes_read;
 
         line_length = 0;
@@ -105,12 +106,20 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                     if (strstr(line, pattern) != NULL) {
                         if (!is_options) {
                             printf("%s\n", line);
+                        } else if (is_line_start && is_option_n) {
+                            char number[32];
+
+                            int len = snprintf(number, sizeof(number),
+                                               "%zu: ", line_number);
+
+                            if (len < 0) {
+                                printf("Error formatting line number\n");
+                                return 1;
+                            }
                         }
                     }
 
-                    if (is_line_start && is_option_n)
-
-                        line_length = 0;
+                    line_length = 0;
                 } else {
                     if (line_length >= MAX_LINE_LENGTH - 1) {
                         printf("Error Exceedng line size\n");
