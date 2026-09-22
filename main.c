@@ -165,10 +165,10 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                     line_length++;
                 }
             }
+        }
 
-            if (is_option_c) {
-                printf("%d\n", match_count);
-            }
+        if (is_option_c) {
+            printf("%d\n", match_count);
         }
 
         if (bytes_read == -1) {
