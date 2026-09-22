@@ -5,9 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 
-static bool is_option_c = false;
+static bool is_option_c = false; // done
 static bool is_option_i = false;
-static bool is_option_n = false;
+static bool is_option_n = false; // done
 static bool is_option_v = false;
 static bool is_option_r = false;
 
@@ -127,7 +127,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                     if (strstr(line, pattern) != NULL) {
                         // if no options are given
                         if (!is_options) {
-                            printf("%s\n", line);
+                            printf("%s", line);
 
                             // if just option a is given
                         } else if (is_line_start && is_option_n) {
@@ -147,10 +147,13 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                                 return 1;
                             }
 
-                            printf("%s\n", line);
+                            printf("%s", line);
                         } else if (is_option_c) {
                             match_count++;
                         }
+                    } else if (is_option_i &&
+                               strcasestr(line, pattern) != NULL) {
+                        printf("%s", line);
                     }
 
                     line_length = 0;
