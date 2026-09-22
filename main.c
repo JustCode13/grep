@@ -99,6 +99,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
         bool is_line_start = true;
         size_t line_number = 0;
         ssize_t bytes_read;
+        int match_count;
 
         line_length = 0;
 
@@ -107,6 +108,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
 
             buffer[bytes_read] = '\n';
             buffer[bytes_read + 1] = '\0';
+            match_count = 0;
 
             for (size_t j = 0; j < (size_t)bytes_read; j++) {
                 if (buffer[j] == '\n' || buffer[j] == '\0') {
@@ -123,8 +125,11 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                     line[line_length] = '\0';
 
                     if (strstr(line, pattern) != NULL) {
+                        // if no options are given
                         if (!is_options) {
                             printf("%s\n", line);
+
+                            // if just option a is given
                         } else if (is_line_start && is_option_n) {
                             char number[32];
 
@@ -143,6 +148,8 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                             }
 
                             printf("%s\n", line);
+                        } else if (is_option_c) {
+                            match_count++;
                         }
                     }
 
@@ -157,6 +164,10 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                     line[line_length] = buffer[j];
                     line_length++;
                 }
+            }
+
+            if (is_option_c) {
+                printf("%d\n", match_count);
             }
         }
 
