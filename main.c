@@ -1,8 +1,10 @@
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 static bool is_option_c = false; // done
@@ -23,8 +25,8 @@ int store_validate_file_names_and_fds(char *file_names[], int file_fds[],
 
 int read_line(int file_fd, char *buf);
 
-int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
-                       bool is_options);
+int read_files_by_line(size_t file_count, char *file_names[], int *file_fds,
+                       char *pattern, bool is_options);
 
 int close_files(char *file_names[], int *file_fds, size_t file_count);
 
@@ -33,7 +35,7 @@ int main(int argc, char *argv[]) {
     size_t file_count = (size_t)argc - 2;
     size_t skip_arg = 2;
 
-    if (argc < 3) {
+    if (argc < 2) {
         printf("Usage: %s [-options] [-pattern] [-files]\n", argv[0]);
         return 1;
     }
@@ -59,16 +61,80 @@ int main(int argc, char *argv[]) {
 
     char *pattern = is_options ? argv[2] : argv[1];
 
-    if (store_validate_file_names_and_fds(file_names, file_fds, file_count,
-                                          argv, skip_arg, is_options) != 0) {
+    if (!is_option_r) {
+        if (store_validate_file_names_and_fds(file_names, file_fds, file_count,
+                                              argv, skip_arg,
+                                              is_options) != 0) {
+            return 1;
+        }
+    }
+
+    if (read_files_by_line(file_count, file_names, file_fds, pattern,
+                           is_options) != 0) {
         return 1;
     }
 
-    is_options ? printf("options are there\n")
-               : printf("options are not there\n");
+    if (is_option_r) {
+        DIR *dir = opendir(".");
 
-    if (read_files_by_line(file_count, file_fds, pattern, is_options) != 0) {
+        if (dir == NULL) {
+            perror("opendir");
+            return 1;
+        }
+
+        struct dirent *de;
+
+        size_t dir_file_count = 0;
+
+        while ((de = readdir(dir)) != NULL) {
+            if (de->d_name[0] == '.') {
+                continue;
+            }
+
+            if (strstr(de->d_name, ".txt") == NULL) {
+                continue;
+            }
+
+            dir_file_count++;
+        }
+
+        char *dir_file_names[dir_file_count];
+        int dir_file_fds[dir_file_count];
+        rewinddir(dir);
+
+        for (size_t i = 0; i < dir_file_count;) {
+            de = readdir(dir);
+
+            if (de == NULL) {
+                break;
+            }
+
+            if (de->d_name[0] == '.') {
+                continue;
+            }
+
+            if (strstr(de->d_name, ".txt") == NULL) {
+                continue;
+            }
+
+            dir_file_names[i] = de->d_name;
+            dir_file_fds[i] = open_file(dir_file_names[i]);
+
+            if (dir_file_fds[i] == -1) {
+                perror("open");
+            }
+
+            i++;
+        }
+
+        if (read_files_by_line(dir_file_count, dir_file_names, dir_file_fds,
+                               pattern, is_options) != 0) {
+        }
+
         return 1;
+
+        // Close the directory stream
+        closedir(dir);
     }
 
     if (close_files(file_names, file_fds, file_count) != 0) {
@@ -89,8 +155,8 @@ int close_files(char *file_names[], int *file_fds, size_t file_count) {
     return 0;
 }
 
-int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
-                       bool is_options) {
+int read_files_by_line(size_t file_count, char *file_names[], int file_fds[],
+                       char *pattern, bool is_options) {
     char buffer[4056];
     char line[MAX_LINE_LENGTH];
     size_t line_length;
@@ -150,7 +216,10 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                             printf("%s", line);
                         } else if (is_option_c) {
                             match_count++;
+                        } else if (is_option_r) {
+                            printf("%s", line);
                         }
+
                     } else if (is_option_i &&
                                strcasestr(line, pattern) != NULL) {
                         printf("%s", line);
@@ -177,6 +246,7 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
         }
 
         if (bytes_read == -1) {
+            printf("%s\n", file_names[i]);
             perror("read");
             return 1;
         }
