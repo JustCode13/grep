@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 static bool is_option_c = false; // done
-static bool is_option_i = false;
+static bool is_option_i = false; // done
 static bool is_option_n = false; // done
 static bool is_option_v = false;
 static bool is_option_r = false;
@@ -153,6 +153,8 @@ int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                         }
                     } else if (is_option_i &&
                                strcasestr(line, pattern) != NULL) {
+                        printf("%s", line);
+                    } else if (is_option_v && strstr(line, pattern) == NULL) {
                         printf("%s", line);
                     }
 
