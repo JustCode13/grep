@@ -26,6 +26,8 @@ int read_line(int file_fd, char *buf);
 int read_files_by_line(size_t file_count, int *file_fds, char *pattern,
                        bool is_options);
 
+int close_files(char *file_names[], int *file_fds, size_t file_count);
+
 int main(int argc, char *argv[]) {
 
     size_t file_count = (size_t)argc - 2;
@@ -69,11 +71,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    if (close_files(file_names, file_fds, file_count) != 0) {
+        return 1;
+    }
+
     return 0;
 }
 
-int close_files(char *file_names[], int *file_fds, int file_count) {
-    for (int i = 0; i < file_count; i++) {
+int close_files(char *file_names[], int *file_fds, size_t file_count) {
+    for (size_t i = 0; i < file_count; i++) {
         if (close(file_fds[i]) != 0) {
             printf("Error: closing file %s\n", file_names[i]);
             return 1;
